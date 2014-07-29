@@ -10,8 +10,59 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import os
+import socket
 
 from pulp.common.config import Config, REQUIRED, ANY, NUMBER, BOOL, OPTIONAL
+
+DEFAULTS = {
+    'server': {
+        'host': socket.gethostname(),
+        'port': '443',
+        'api_prefix': '/pulp/api',
+        'rsa_pub': '/etc/pki/pulp/consumer/server/rsa_pub.key',
+        'verify_ssl': 'true',
+    },
+    'authentication': {
+        'rsa_key': '/etc/pki/pulp/consumer/rsa.key',
+        'rsa_pub': '/etc/pki/pulp/consumer/rsa_pub.key'
+    },
+    'client': {
+        'role': 'consumer'
+    },
+    'filesystem': {
+        'extensions_dir': '/usr/lib/pulp/consumer/extensions',
+        'repo_file': '/etc/yum.repos.d/pulp.repo',
+        'mirror_list_dir': '/etc/yum.repos.d',
+        'gpg_keys_dir': '/etc/pki/pulp-gpg-keys',
+        'cert_dir': '/etc/pki/pulp/client/repo',
+        'id_cert_dir': '/etc/pki/pulp/consumer/',
+        'id_cert_filename': 'consumer-cert.pem',
+    },
+    'reboot': {
+        'permit': 'false',
+        'delay': '3',
+    },
+    'logging': {
+        'filename': '~/.pulp/consumer.log',
+    },
+    'output': {
+        'poll_frequency_in_seconds': '1',
+        'enable_color': 'true',
+        'wrap_to_terminal': 'false',
+        'wrap_width': '80',
+    },
+    'messaging': {
+        'scheme': 'amqp',
+        'host': None,
+        'port': '5672',
+        'transport': 'qpid',
+        'cacert': None,
+        'clientcert': None,
+    },
+    'profile': {
+        'minutes': '240',
+    }
+}
 
 
 SCHEMA = (
@@ -19,7 +70,8 @@ SCHEMA = (
         (
             ('host', REQUIRED, ANY),
             ('port', REQUIRED, NUMBER),
-            ('api_prefix', REQUIRED, ANY)
+            ('api_prefix', REQUIRED, ANY),
+            ('verify_ssl', REQUIRED, BOOL)
         )
     ),
     ('client', REQUIRED,
@@ -60,7 +112,7 @@ SCHEMA = (
     ),
     ('messaging', REQUIRED,
         (
-            ('scheme', REQUIRED, r'(tcp|ssl)'),
+            ('scheme', REQUIRED, r'(tcp|ssl|amqp|amqps)'),
             ('host', OPTIONAL, ANY),
             ('port', REQUIRED, NUMBER),
             ('cacert', OPTIONAL, ANY),
@@ -91,7 +143,8 @@ def read_config(paths=None, validate=True):
         overrides = os.path.expanduser('~/.pulp/consumer.conf')
         if os.path.exists(overrides):
             paths.append(overrides)
-    config = Config(*paths)
+    config = dict(DEFAULTS)
+    config.update(Config(*paths))
     if validate:
         config.validate(SCHEMA)
     return config
