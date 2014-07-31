@@ -236,6 +236,15 @@ class ContentSource(object):
         return self.descriptor[constants.BASE_URL]
 
     @property
+    def max_concurrent(self):
+        """
+        Get the download concurrency specified in the source definition.
+        :return: The download concurrency.
+        :rtype: int
+        """
+        return int(self.descriptor.get(constants.MAX_CONCURRENT, 2))
+
+    @property
     def urls(self):
         """
         Get the (optional) list of URLs specified in the descriptor.
