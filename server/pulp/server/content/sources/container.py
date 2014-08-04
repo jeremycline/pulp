@@ -213,11 +213,9 @@ class NectarListener(DownloadEventListener):
         request = report.data
         request.errors.append(report.error_msg)
         listener = self.batch.listener
-        if request.has_source():
-            # try another
-            self.batch.dispatch(request)
+        if self.batch.dispatch(request):
+            # trying another
             return
-        self.batch.finished(request)
         if not listener:
             # nobody listening
             return
@@ -276,7 +274,7 @@ class Batch(object):
         :return: True if canceled.
         :rtype: bool.
         """
-        return self.canceled.is_set()
+        return self.canceled.isSet()
     
     def dispatch(self, request):
         """
@@ -286,13 +284,18 @@ class Batch(object):
         is exhausted, the request is not dispatched.
         :param request: The request that has been stared.
         :type request: pulp.server.content.sources.model.Request
+        :return: True if dispatched.
+        :rtype: bool
         """
-        if not request.has_source():
-            # exhausted
-            return
-        source, url = request.next_source()
-        queue = self.find_queue(source)
-        queue.put(Item(request, url))
+        dispatched = False
+        try:
+            source, url = request.sources.next()
+            queue = self.find_queue(source)
+            queue.put(Item(request, url))
+            dispatched = True
+        except StopIteration:
+            self.finished(request)
+        return dispatched
 
     def find_queue(self, source):
         """
@@ -346,11 +349,14 @@ class Batch(object):
                 if self.is_canceled:
                     # canceled
                     break
-                self.started(request)
                 request.find_sources(self.primary, self.sources)
+                self.started(request)
                 self.dispatch(request)
+        except Exception:
+            self.canceled.set()
+            raise
         finally:
-            while not self.is_canceled and self.is_waiting():
+            while self.is_waiting():
                 sleep(0.5)
             for queue in self.queues.values():
                 queue.put(None)
@@ -371,7 +377,7 @@ class Batch(object):
         :param request: The request that has been stared.
         :type request: pulp.server.content.sources.model.Request
         """
-        self.in_progress.add(id(request))
+        self.in_progress.add(request)
 
     def finished(self, request):
         """
@@ -381,14 +387,14 @@ class Batch(object):
         :param request: The request that has been stared.
         :type request: pulp.server.content.sources.model.Request
         """
-        self.in_progress.remove(id(request))
+        self.in_progress.remove(request)
 
     def is_waiting(self):
         """
         Get whether the batch is waiting for all of the download
         requests be complete.
         """
-        return len(self.in_progress) > 0
+        return not (self.is_canceled or len(self.in_progress) == 0)
 
 
 #
@@ -436,7 +442,7 @@ class RequestQueue(Thread):
         :return: True if should continue.
         :rtype: bool
         """
-        return not (self.canceled.is_set() or self._halted)
+        return not (self.canceled.isSet() or self._halted)
 
     def put(self, item):
         """
@@ -449,7 +455,8 @@ class RequestQueue(Thread):
         """
         while self._run:
             try:
-                return self.queue.put(item, timeout=10)
+                self.queue.put(item, timeout=10)
+                break
             except Full:
                 # ignored
                 pass
