@@ -1,3 +1,4 @@
+import os
 import sys
 
 from gettext import gettext as _
@@ -81,6 +82,52 @@ class Importer(object):
         """
         nectar_config = importer_to_nectar_config(importer, working_dir=working_dir)
         return Importer.build_downloader(url, nectar_config)
+
+    @staticmethod
+    def requests_kwargs_from_importer(importer):
+        """
+        Take an importer configuration and map it to a set of requests keyword arguments.
+
+        These keyword arguments can be used with the Python requests ``requests.request``
+        API.
+
+        Note: The database importer does NOT contain the plugin-wide configuration.
+
+        :param importer: The database representation of an Importer for which we need a
+                         downloader.
+        :type  importer: pulp.server.db.model.Importer
+
+        :return: A dictionary of keyword arguments for the requests API.
+        :rtype:  dict
+        """
+        requests_kwargs = {}
+        config = importer.config
+        if config.basic_auth_username and config.basic_auth_password:
+            requests_kwargs['auth'] = (config.basic_auth_username, config.basic_auth_password)
+
+        if config.ssl_validation:
+            if os.path.isfile(importer.tls_ca_cert_path):
+                requests_kwargs['verify'] = importer.tls_ca_cert_path
+            else:
+                requests_kwargs['verify'] = True
+        else:
+            requests_kwargs['verify'] = False
+
+        if os.path.isfile(importer.tls_client_cert_path) and os.path.isfile(importer.tls_client_key_path):
+            requests_kwargs['cert'] = (importer.tls_client_cert_path, importer.tls_client_key_path)
+
+        if config.proxy_url and config.proxy_port:
+            split_url = urlparse.urlsplit(config.proxy_url)
+            proxy_auth = ''
+            if config.proxy_username and config.proxy_password:
+                proxy_auth = '{user}:{password}@'.format(user=config.proxy_username,
+                                                         password=config.proxy_password)
+
+            proxy_url = '{scheme}://{auth}{netloc}{port}'.format(
+                    scheme=split_url.scheme, auth=proxy_auth, netloc=split_url.netloc, port=split_url.port)
+            requests_kwargs['proxies'] = {'http': proxy_url, 'https': proxy_url}
+
+        return requests_kwargs
 
     # -- plugin lifecycle -----------------------------------------------------
 
