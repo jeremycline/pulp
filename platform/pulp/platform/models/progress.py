@@ -4,10 +4,10 @@ Django models related to Progress Reporting
 from gettext import gettext as _
 import logging
 
+from celery import current_task
 from django.db import models
 
 from pulp.platform.models import Model, Task
-from pulp.server.async.tasks import get_current_task_id
 
 
 __all__ = [
@@ -17,6 +17,19 @@ __all__ = [
 
 
 _logger = logging.getLogger(__name__)
+
+
+def get_current_task_id():
+    """"
+    Get the current task id from celery. If this is called outside of a running
+    celery task it will return None
+
+    :return: The ID of the currently running celery task or None if not in a task
+    :rtype: str
+    """
+    if current_task and current_task.request and current_task.request.id:
+        return current_task.request.id
+    return None
 
 
 class ProgressReport(Model):
@@ -83,7 +96,6 @@ class ProgressReport(Model):
         if self.task_id is None:
             self.task_id = Task.objects.get(id=get_current_task_id())
         super(ProgressReport, self).save(*args, **kwargs)
-
 
     def __enter__(self):
         """
