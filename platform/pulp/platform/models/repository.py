@@ -1,6 +1,11 @@
 """
 Repository related Django models.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 from django.db import models
 from django.contrib.contenttypes import fields
 from django.utils import timezone

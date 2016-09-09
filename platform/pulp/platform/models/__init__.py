@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 # https://docs.djangoproject.com/en/1.8/topics/db/models/#organizing-models-in-a-package
 from .base import Model, MasterModel  # NOQA
 from .generic import GenericRelationModel, GenericKeyValueStore, Config, Notes, Scratchpad  # NOQA

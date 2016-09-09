@@ -1,6 +1,10 @@
 """
 Content related Django models.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import hashlib
 
 from django.contrib.contenttypes import fields
@@ -55,12 +59,12 @@ class Content(MasterModel):
         """
         h = hashlib.sha256()
         for name in sorted(f.name for f in self.natural_key_fields):
-            h.update(name)
+            h.update(name.encode(encoding='utf-8'))
             value = getattr(self, name)
-            if not isinstance(value, basestring):
-                h.update(str(value))
-            else:
+            if not isinstance(value, str):
                 h.update(value)
+            else:
+                h.update(value.encode(encoding='utf-8'))
         return h.hexdigest()
 
 

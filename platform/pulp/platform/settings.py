@@ -9,7 +9,10 @@ https://docs.djangoproject.com/en/1.9/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import os
 import socket
 import sys
@@ -224,7 +227,7 @@ def load_settings(paths=()):
              as there are a set of Django-provided defaults as well.
     :rtype:  dict
     """
-    if isinstance(paths, basestring):
+    if not isinstance(paths, (list, tuple)):
         paths = [paths]
 
     settings = _DEFAULT_PULP_SETTINGS

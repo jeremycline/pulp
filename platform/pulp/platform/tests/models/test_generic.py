@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from random import randrange
 
 from django.db import IntegrityError
@@ -99,4 +103,6 @@ class GenericMutableMappingTestCase(TestCase):
     def test_repr(self):
         # keeping coverage happy :)
         self.notes.mapping['key'] = 'value'
-        self.assertEqual(repr(self.notes.mapping), "Notes({u'key': u'value'})")
+        # Python 3 doesn't include the u since all strings are unicode
+        self.assertIn(repr(self.notes.mapping), ("Notes({u'key': u'value'})",
+                                                 "Notes({'key': 'value'})"))

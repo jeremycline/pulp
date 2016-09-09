@@ -4,6 +4,10 @@ Container for models using generic relations provided by Django's ContentTypes f
 References:
     https://docs.djangoproject.com/en/1.8/ref/contrib/contenttypes/#generic-relations
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 try:
     # python3
     from collections import MutableMapping
